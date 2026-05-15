@@ -11,26 +11,23 @@ import authRoutes from './routes/authRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import { initSocket } from './socket/socketHandler.js';
 
-const app = express();           // ✅ Pehle app banao
+const app = express();
 const httpServer = http.createServer(app);
 
-// ✅ CORS middleware — app define hone ke BAAD
 const allowedOrigins = [
   "http://localhost:5173",
   "https://track-sync-one.vercel.app"
 ];
 
+// ✅ Bas yahi kafi hai — app.options hatao bilkul
 app.use(cors({
   origin: allowedOrigins,
   credentials: true
 }));
 
-// ✅ OPTIONS preflight requests handle karo
-app.options('/(.*)', cors({ origin: allowedOrigins, credentials: true }));
-
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,   // ✅ env var pe depend mat karo
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -50,13 +47,13 @@ connectDB();
 if (process.env.REDIS_URL) {
   connectRedis();
 } else {
-  console.log("⚠️ Redis disabled (no REDIS_URL)");
+  console.log("⚠️ Redis disabled");
 }
 
 if (process.env.KAFKA_BROKER) {
   connectKafka();
 } else {
-  console.log("⚠️ Kafka disabled (no KAFKA_BROKER)");
+  console.log("⚠️ Kafka disabled");
 }
 
 initSocket(io);
