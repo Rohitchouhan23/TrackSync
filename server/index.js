@@ -26,6 +26,8 @@ app.use(cors({
   credentials: true
 }));
 
+app.options("*", cors());
+
 /* ---------------- SOCKET ---------------- */
 const io = new Server(httpServer, {
   cors: {
@@ -49,18 +51,6 @@ app.get("/", (req, res) => {
 /* ---------------- DB ---------------- */
 connectDB();
 
-/* ---------------- KAFKA SAFE ---------------- */
-if (process.env.KAFKA_BROKER) {
-  try {
-    connectKafka(); // ✅ correct function name
-    console.log("✅ Kafka connected");
-  } catch (err) {
-    console.log("⚠️ Kafka error:", err.message);
-  }
-} else {
-  console.log("⚠️ Kafka disabled");
-}
-
 /* ---------------- REDIS SAFE ---------------- */
 if (process.env.REDIS_URL) {
   try {
@@ -70,7 +60,19 @@ if (process.env.REDIS_URL) {
     console.log("⚠️ Redis error:", err.message);
   }
 } else {
-  console.log("⚠️ Redis disabled");
+  console.log("⚠️ Redis disabled (no REDIS_URL)");
+}
+
+/* ---------------- KAFKA SAFE ---------------- */
+if (process.env.KAFKA_BROKER) {
+  try {
+    connectKafka();
+    console.log("✅ Kafka connected");
+  } catch (err) {
+    console.log("⚠️ Kafka error:", err.message);
+  }
+} else {
+  console.log("⚠️ Kafka disabled (no KAFKA_BROKER)");
 }
 
 /* ---------------- SOCKET INIT ---------------- */
