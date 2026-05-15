@@ -4,6 +4,12 @@ export const kafka = process.env.KAFKA_BROKER
   ? new Kafka({
       clientId: 'location-tracker',
       brokers: [process.env.KAFKA_BROKER],
+      ssl: true,                        // ✅ Aiven ke liye zaroori
+      connectionTimeout: 3000,
+      authenticationTimeout: 3000,
+      retry: {
+        retries: 0,                     // ✅ Retry mat karo — crash rokta hai
+      },
     })
   : null;
 
@@ -15,12 +21,11 @@ export const connectKafka = async () => {
     console.log("⚠️ Kafka not configured, skipping...");
     return;
   }
-
   try {
     await producer.connect();
     await consumer.connect();
     console.log('✅ Kafka connected');
   } catch (err) {
-    console.error('Kafka error:', err.message);
+    console.log("⚠️ Kafka disabled:", err.message); // ✅ error mat throw karo
   }
 };

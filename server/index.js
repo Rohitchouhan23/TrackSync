@@ -18,7 +18,8 @@ const httpServer = http.createServer(app);
 /* ---------------- CORS ---------------- */
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://track-sync-one.vercel.app"
+  "https://track-sync-one.vercel.app",
+  "https://track-sync-j63g.vercel.app",  // ✅ naya URL add kiya
 ];
 
 app.use(cors({
@@ -51,29 +52,28 @@ app.get("/", (req, res) => {
 /* ---------------- DB ---------------- */
 connectDB();
 
-/* ---------------- REDIS (UPSTASH SAFE) ---------------- */
-if (process.env.REDIS_URL && process.env.REDIS_URL.startsWith("redis://")) {
-  try {
-    connectRedis();
-    console.log("✅ Redis connected (Upstash)");
-  } catch (err) {
-    console.log("⚠️ Redis error:", err.message);
-  }
+/* ---------------- REDIS ---------------- */
+if (process.env.REDIS_URL) {
+  connectRedis().catch((err) => {       // ✅ async catch
+    console.log("⚠️ Redis disabled:", err.message);
+  });
 } else {
   console.log("⚠️ Redis disabled");
 }
 
-/* ---------------- KAFKA (AIVEN SAFE) ---------------- */
+/* ---------------- KAFKA ---------------- */
 if (process.env.KAFKA_BROKER) {
-  try {
-    connectKafka();
-    console.log("✅ Kafka connected (Aiven)");
-  } catch (err) {
-    console.log("⚠️ Kafka error:", err.message);
-  }
+  connectKafka().catch((err) => {       // ✅ async catch — crash nahi hoga
+    console.log("⚠️ Kafka disabled:", err.message);
+  });
 } else {
   console.log("⚠️ Kafka disabled");
 }
+
+/* ---------------- UNHANDLED SAFETY NET ---------------- */
+process.on("unhandledRejection", (reason) => {
+  console.log("⚠️ Unhandled Rejection:", reason?.message || reason);
+});
 
 /* ---------------- SOCKET INIT ---------------- */
 initSocket(io);
