@@ -4,8 +4,29 @@ import { startConsumer } from '../kafka/consumer.js';
 import { redisClient } from '../config/redis.js';
 import Session from '../models/Session.js';
 
+// ✅ Redis safe wrapper
+const safeRedisGet = async (key) => {
+  try {
+    if (!redisClient?.isReady) return null;
+    return await redisClient.get(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeRedisSet = async (key, value) => {
+  try {
+    if (!redisClient?.isReady) return;
+    await redisClient.set(key, value);
+  } catch {}
+};
+
 export const initSocket = (io) => {
-  startConsumer(io);
+  try {
+    startConsumer(io);
+  } catch (err) {
+    console.log("⚠️ Consumer disabled:", err.message);
+  }
 
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
@@ -20,33 +41,57 @@ export const initSocket = (io) => {
   io.on('connection', (socket) => {
     console.log('🔌 Socket connected:', socket.id);
 
-    // Sender: join their session room & stream location
     socket.on('startSharing', async ({ sessionId }) => {
-      const cached = await redisClient.get(`session:${sessionId}`);
-      if (!cached) return socket.emit('error', { message: 'Session expired' });
-      socket.join(`session:${sessionId}`);
-      socket.sessionId = sessionId;
-      console.log(`📡 Sender joined session: ${sessionId}`);
+      try {
+        const cached = await safeRedisGet(`session:${sessionId}`);
+        // ✅ Redis nahi hai toh MongoDB se check karo
+        if (!cached) {
+          const session = await Session.findOne({ sessionId, active: true });
+          if (!session) return socket.emit('error', { message: 'Session expired' });
+        }
+        socket.join(`session:${sessionId}`);
+        socket.sessionId = sessionId;
+        console.log(`📡 Sender joined session: ${sessionId}`);
+      } catch (err) {
+        console.log("startSharing error:", err.message);
+      }
     });
 
-    // Viewer: join session room to receive updates
     socket.on('watchSession', async ({ sessionId }) => {
-      socket.join(`session:${sessionId}`);
-      // Send last known location immediately
-      const lastLoc = await redisClient.get(`location:${sessionId}`);
-      if (lastLoc) socket.emit('locationUpdate', JSON.parse(lastLoc));
+      try {
+        socket.join(`session:${sessionId}`);
+        const lastLoc = await safeRedisGet(`location:${sessionId}`);
+        if (lastLoc) socket.emit('locationUpdate', JSON.parse(lastLoc));
+      } catch (err) {
+        console.log("watchSession error:", err.message);
+      }
     });
 
-    // Location update from sender
     socket.on('sendLocation', async ({ sessionId, lat, lng }) => {
-      const cached = await redisClient.get(`session:${sessionId}`);
-      if (!cached) return socket.emit('sessionExpired');
+      try {
+        const cached = await safeRedisGet(`session:${sessionId}`);
+        if (!cached) {
+          const session = await Session.findOne({ sessionId, active: true });
+          if (!session) return socket.emit('sessionExpired');
+        }
 
-      await publishLocation(sessionId, { lat, lng });
-      await Session.findOneAndUpdate(
-        { sessionId },
-        { lastLocation: { lat, lng, timestamp: new Date() } }
-      );
+        // ✅ Kafka available hai toh publish karo, nahi toh direct broadcast karo
+        try {
+          await publishLocation(sessionId, { lat, lng });
+        } catch {
+          // Kafka nahi hai — direct socket broadcast karo
+          const payload = { lat, lng, timestamp: new Date() };
+          io.to(`session:${sessionId}`).emit('locationUpdate', payload);
+          await safeRedisSet(`location:${sessionId}`, JSON.stringify(payload));
+        }
+
+        await Session.findOneAndUpdate(
+          { sessionId },
+          { lastLocation: { lat, lng, timestamp: new Date() } }
+        );
+      } catch (err) {
+        console.log("sendLocation error:", err.message);
+      }
     });
 
     socket.on('disconnect', () => {

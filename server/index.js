@@ -19,7 +19,7 @@ const httpServer = http.createServer(app);
 const allowedOrigins = [
   "http://localhost:5173",
   "https://track-sync-one.vercel.app",
-  "https://track-sync-j63g.vercel.app",  // ✅ naya URL add kiya
+  "https://track-sync-j63g.vercel.app", 
 ];
 
 app.use(cors({
