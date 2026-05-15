@@ -51,28 +51,28 @@ app.get("/", (req, res) => {
 /* ---------------- DB ---------------- */
 connectDB();
 
-/* ---------------- REDIS SAFE ---------------- */
-if (process.env.REDIS_URL) {
+/* ---------------- REDIS (UPSTASH SAFE) ---------------- */
+if (process.env.REDIS_URL && process.env.REDIS_URL.startsWith("redis://")) {
   try {
     connectRedis();
-    console.log("✅ Redis connected");
+    console.log("✅ Redis connected (Upstash)");
   } catch (err) {
     console.log("⚠️ Redis error:", err.message);
   }
 } else {
-  console.log("⚠️ Redis disabled (no REDIS_URL)");
+  console.log("⚠️ Redis disabled");
 }
 
-/* ---------------- KAFKA SAFE ---------------- */
+/* ---------------- KAFKA (AIVEN SAFE) ---------------- */
 if (process.env.KAFKA_BROKER) {
   try {
     connectKafka();
-    console.log("✅ Kafka connected");
+    console.log("✅ Kafka connected (Aiven)");
   } catch (err) {
     console.log("⚠️ Kafka error:", err.message);
   }
 } else {
-  console.log("⚠️ Kafka disabled (no KAFKA_BROKER)");
+  console.log("⚠️ Kafka disabled");
 }
 
 /* ---------------- SOCKET INIT ---------------- */
