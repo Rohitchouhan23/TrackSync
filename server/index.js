@@ -11,11 +11,6 @@ import authRoutes from './routes/authRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import { initSocket } from './socket/socketHandler.js';
 
-
-
-const app = express();
-const httpServer = http.createServer(app);
-
 app.use(cors({
   origin: [
     "http://localhost:5173",
@@ -23,6 +18,9 @@ app.use(cors({
   ],
   credentials: true
 }));
+
+const app = express();
+const httpServer = http.createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
