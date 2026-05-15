@@ -26,10 +26,7 @@ app.use(cors({
 }));
 
 // ✅ OPTIONS preflight requests handle karo
-app.options('*', cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+app.options('/(.*)', cors({ origin: allowedOrigins, credentials: true }));
 
 const io = new Server(httpServer, {
   cors: {
