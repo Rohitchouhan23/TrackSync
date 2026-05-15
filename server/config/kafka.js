@@ -1,14 +1,21 @@
 import { Kafka } from 'kafkajs';
 
-export const kafka = new Kafka({
-  clientId: 'location-tracker',
-  brokers: [process.env.KAFKA_BROKER],
-});
+export const kafka = process.env.KAFKA_BROKER
+  ? new Kafka({
+      clientId: 'location-tracker',
+      brokers: [process.env.KAFKA_BROKER],
+    })
+  : null;
 
-export const producer = kafka.producer();
-export const consumer = kafka.consumer({ groupId: 'location-group' });
+export const producer = kafka ? kafka.producer() : null;
+export const consumer = kafka ? kafka.consumer({ groupId: 'location-group' }) : null;
 
 export const connectKafka = async () => {
+  if (!kafka) {
+    console.log("⚠️ Kafka not configured, skipping...");
+    return;
+  }
+
   try {
     await producer.connect();
     await consumer.connect();

@@ -32,8 +32,17 @@ app.use('/api/sessions', sessionRoutes);
 
 // Init services
 connectDB();
-connectRedis();
-connectKafka();
+if (process.env.REDIS_URL) {
+  connectRedis();
+} else {
+  console.log("⚠️ Redis disabled (no REDIS_URL)");
+}
+
+if (process.env.KAFKA_BROKER) {
+  connectKafka();
+} else {
+  console.log("⚠️ Kafka disabled (no KAFKA_BROKER)");
+}
 initSocket(io);
 
 const PORT = process.env.PORT || 5000;
