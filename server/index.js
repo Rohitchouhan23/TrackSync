@@ -26,7 +26,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.options("*", cors());
+app.options(/.*/, cors());
 
 /* ---------------- SOCKET ---------------- */
 const io = new Server(httpServer, {
