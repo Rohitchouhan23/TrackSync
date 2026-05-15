@@ -16,6 +16,14 @@ import { initSocket } from './socket/socketHandler.js';
 const app = express();
 const httpServer = http.createServer(app);
 
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://track-sync-one.vercel.app"
+  ],
+  credentials: true
+}));
+
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.CLIENT_URL,
@@ -24,13 +32,7 @@ const io = new Server(httpServer, {
   },
 });
 
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://track-sync-one.vercel.app"
-  ],
-  credentials: true
-}));
+
 
 app.use(express.json());
 
