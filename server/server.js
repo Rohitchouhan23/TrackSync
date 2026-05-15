@@ -37,6 +37,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 
+app.get("/", (req, res) => {
+  res.json({ message: "Backend is working" });
+});
+
 // Init services
 connectDB();
 if (process.env.REDIS_URL) {
